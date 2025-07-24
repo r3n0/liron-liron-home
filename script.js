@@ -6,7 +6,7 @@ class FrameSequence {
 		this.loadingIndicator = document.querySelector('.loading-indicator');
 
 		// Configuration
-		this.frameCount = 80; // Adjust based on your actual frame count
+		this.frameCount = 160; // Adjust based on your actual frame count
 		this.frameFormat = 'webp'; // Change to 'png' if your frames are PNG
 		this.currentFrame = 0;
 		this.images = [];
