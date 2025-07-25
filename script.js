@@ -162,52 +162,23 @@ class FrameSequence {
 	}
 }
 
-// Alternative: If you want to use different frame naming convention
-// You can modify the image loading part like this:
-/*
-class FrameSequenceAlternative extends FrameSequence {
-    loadImages() {
-        this.loadingIndicator.classList.add('show');
-        
-        for (let i = 0; i < this.frameCount; i++) {
-            const img = new Image();
-            img.onload = () => {
-                this.imagesLoaded++;
-                if (this.imagesLoaded === this.frameCount) {
-                    this.loadingIndicator.classList.remove('show');
-                    this.setupScrollTrigger();
-                }
-            };
-            
-            // For frames named: frame_0.jpg, frame_1.jpg, etc.
-            img.src = `frames/frame_${i}.${this.frameFormat}`;
-            // Or for frames named: 0001.jpg, 0002.jpg, etc.
-            // const frameNumber = (i + 1).toString().padStart(4, '0');
-            // img.src = `frames/${frameNumber}.${this.frameFormat}`;
-            
-            this.images[i] = img;
-        }
-    }
-}
-*/
-
 // Initialize the frame sequence when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
 	new FrameSequence();
 });
 
-// Optional: Add smooth scrolling for better user experience
-gsap.registerPlugin(ScrollTrigger);
+// // Optional: Add smooth scrolling for better user experience
+// gsap.registerPlugin(ScrollTrigger);
 
-// You can also add additional scroll-triggered animations
-gsap.to('.content', {
-	y: 0,
-	opacity: 1,
-	duration: 1,
-	scrollTrigger: {
-		trigger: '.content',
-		start: 'top 80%',
-		end: 'bottom 20%',
-		toggleActions: 'play none none reverse',
-	},
-});
+// // You can also add additional scroll-triggered animations
+// gsap.to('.content', {
+// 	y: 0,
+// 	opacity: 1,
+// 	duration: 1,
+// 	scrollTrigger: {
+// 		trigger: '.content',
+// 		start: 'top 80%',
+// 		end: 'bottom 20%',
+// 		toggleActions: 'play none none reverse',
+// 	},
+// });
