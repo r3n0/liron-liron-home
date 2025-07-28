@@ -65,7 +65,7 @@ class FrameSequence {
 		this.startSmoothAnimation();
 
 		const totalFrames = this.frameCount;
-		const totalScroll = window.innerHeight * 1.2;
+		const totalScroll = window.innerHeight * 2;
 		const firstPhaseEnd = totalScroll * 0.9;
 
 		ScrollTrigger.create({
