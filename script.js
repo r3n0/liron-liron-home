@@ -1,4 +1,5 @@
-// Frame sequence animation with GSAP ScrollTrigger
+// Assumes gsap and ScrollTrigger are available as globals via CDN
+
 class FrameSequence {
 	constructor() {
 		this.canvas = document.getElementById('sequenceCanvas');
@@ -6,10 +7,10 @@ class FrameSequence {
 		this.loadingIndicator = document.querySelector('.loading-indicator');
 
 		// Configuration
-		this.frameCount = 160; // Adjust based on your actual frame count
-		this.frameFormat = 'webp'; // Change to 'png' if your frames are PNG
+		this.frameCount = 160;
+		this.frameFormat = 'webp';
 		this.currentFrame = 0;
-		this.targetFrame = 0; // Target frame for smooth interpolation
+		this.targetFrame = 0;
 		this.images = [];
 		this.imagesLoaded = 0;
 		this.isAnimating = false;
@@ -28,14 +29,12 @@ class FrameSequence {
 			this.canvas.height = window.innerHeight;
 			this.drawFrame();
 		};
-
 		window.addEventListener('resize', resizeCanvas);
 		resizeCanvas();
 	}
 
 	loadImages() {
 		this.loadingIndicator.classList.add('show');
-
 		for (let i = 1; i <= this.frameCount; i++) {
 			const img = new Image();
 			img.onload = () => {
@@ -45,44 +44,53 @@ class FrameSequence {
 					this.setupScrollTrigger();
 				}
 			};
-
 			img.onerror = () => {
-				console.warn(`Failed to load frame ${i}`);
+				console.warn(`Frame ${i} failed to load`);
 				this.imagesLoaded++;
 				if (this.imagesLoaded === this.frameCount) {
 					this.loadingIndicator.classList.remove('show');
 					this.setupScrollTrigger();
 				}
 			};
-
-			// Assuming frames are named: frame001.jpg, frame002.jpg, etc.
-			const frameNumber = i.toString().padStart(3, '0');
-			img.src = `frames/frame${frameNumber}.${this.frameFormat}`;
-			this.images[i - 1] = img;
+			const num = String(i).padStart(3, '0');
+			img.src = `frames/frame${num}.${this.frameFormat}`;
+			this.images.push(img);
 		}
 	}
 
 	setupScrollTrigger() {
-		// Register ScrollTrigger plugin
 		gsap.registerPlugin(ScrollTrigger);
 
-		// Create timeline for frame animation
-		const tl = gsap.timeline({
-			scrollTrigger: {
-				trigger: '.canvas-container',
-				start: 'top top',
-				end: 'bottom top',
-				scrub: 0.5, // Reduced scrub value for smoother response
-				onUpdate: (self) => {
-					const frameIndex = self.progress * (this.frameCount - 1);
-					this.setTargetFrame(frameIndex);
-				},
+		this.drawFrame();
+		this.startSmoothAnimation();
+
+		const totalFrames = this.frameCount;
+		const totalScroll = window.innerHeight * 1.2;
+		const firstPhaseEnd = totalScroll * 0.9;
+
+		ScrollTrigger.create({
+			trigger: '.canvas-container',
+			start: 'top top',
+			end: firstPhaseEnd,
+			scrub: 0.1,
+			pin: '.canvas-container',
+			onUpdate: (self) => {
+				const frameIndex = self.progress * (totalFrames * 0.9);
+				this.setTargetFrame(frameIndex);
 			},
 		});
 
-		// Initial frame draw
-		this.drawFrame();
-		this.startSmoothAnimation();
+		ScrollTrigger.create({
+			start: firstPhaseEnd,
+			end: totalScroll,
+			scrub: 0.5,
+			onUpdate: (self) => {
+				const progress = self.progress;
+				const frameIndex =
+					totalFrames * 0.9 + progress * (totalFrames * 0.1);
+				this.setTargetFrame(frameIndex);
+			},
+		});
 	}
 
 	setTargetFrame(frameIndex) {
@@ -100,85 +108,47 @@ class FrameSequence {
 
 	animateToTarget() {
 		const lerp = (start, end, factor) => start + (end - start) * factor;
-		const smoothingFactor = 0.15; // Slightly increased for more responsiveness
+		const smoothing = 0.3;
 
-		// Smooth interpolation towards target frame
 		this.currentFrame = lerp(
 			this.currentFrame,
 			this.targetFrame,
-			smoothingFactor
+			smoothing
 		);
 
-		// Only update if there's a meaningful difference
-		if (Math.abs(this.targetFrame - this.currentFrame) > 0.05) {
+		if (Math.abs(this.currentFrame - this.targetFrame) > 0.05) {
 			this.drawFrame();
 			requestAnimationFrame(() => this.animateToTarget());
 		} else {
-			// Snap to target when very close
 			this.currentFrame = this.targetFrame;
 			this.drawFrame();
 			requestAnimationFrame(() => this.animateToTarget());
 		}
 	}
 
-	updateFrame(frameIndex) {
-		// This method is now replaced by setTargetFrame and smooth animation
-		this.setTargetFrame(frameIndex);
-	}
-
 	drawFrame() {
-		const frameIndex = Math.round(this.currentFrame); // Use round instead of floor for better frame selection
-
-		// Clear canvas
+		const idx = Math.round(this.currentFrame);
+		const img = this.images[idx];
 		this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-		if (this.images[frameIndex] && this.images[frameIndex].complete) {
-			const img = this.images[frameIndex];
-
-			// Calculate scaling to cover full screen while maintaining aspect ratio
+		if (img && img.complete) {
 			const canvasAspect = this.canvas.width / this.canvas.height;
 			const imgAspect = img.width / img.height;
-
-			let drawWidth,
-				drawHeight,
+			let drawW,
+				drawH,
 				offsetX = 0,
 				offsetY = 0;
-
 			if (canvasAspect > imgAspect) {
-				// Canvas is wider than image
-				drawWidth = this.canvas.width;
-				drawHeight = drawWidth / imgAspect;
-				offsetY = (this.canvas.height - drawHeight) / 2;
+				drawW = this.canvas.width;
+				drawH = drawW / imgAspect;
+				offsetY = (this.canvas.height - drawH) / 2;
 			} else {
-				// Canvas is taller than image
-				drawHeight = this.canvas.height;
-				drawWidth = drawHeight * imgAspect;
-				offsetX = (this.canvas.width - drawWidth) / 2;
+				drawH = this.canvas.height;
+				drawW = drawH * imgAspect;
+				offsetX = (this.canvas.width - drawW) / 2;
 			}
-
-			// Draw the image at full opacity (no blending)
-			this.ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
+			this.ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
 		}
 	}
 }
 
-// Initialize the frame sequence when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-	new FrameSequence();
-});
-
-// // Optional: Add smooth scrolling for better user experience
-// gsap.registerPlugin(ScrollTrigger);
-
-// // You can also add additional scroll-triggered animations
-// gsap.to('.content', {
-// 	y: 0,
-// 	opacity: 1,
-// 	duration: 1,
-// 	scrollTrigger: {
-// 		trigger: '.content',
-// 		start: 'top 80%',
-// 		end: 'bottom 20%',
-// 		toggleActions: 'play none none reverse',
-// 	},
-// });
+document.addEventListener('DOMContentLoaded', () => new FrameSequence());
